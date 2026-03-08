@@ -1,19 +1,57 @@
-import { animals } from "@/data/mockData";
+import { animals as initialAnimals } from "@/data/mockData";
 import { RiskBadge } from "@/components/RiskBadge";
-import { Thermometer, Activity, Eye, ShieldAlert } from "lucide-react";
+import { Thermometer, Activity, Eye, ShieldAlert, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import type { Animal } from "@/data/mockData";
+import { DownloadPDFButton } from "@/components/DownloadPDFButton";
+
+function jitter(val: number, range: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, parseFloat((val + (Math.random() - 0.5) * range).toFixed(1))));
+}
 
 export function AnimalHealthTable() {
+  const [animals, setAnimals] = useState<Animal[]>(initialAnimals);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState("just now");
+
+  function handleRefresh() {
+    setRefreshing(true);
+    setTimeout(() => {
+      setAnimals(prev => prev.map(a => ({
+        ...a,
+        bodyTemp: jitter(a.bodyTemp, 0.4, 37.5, 43),
+        skinColorIndex: jitter(a.skinColorIndex, 4, 0, 100),
+        activityScore: jitter(a.activityScore, 5, 0, 100),
+        lastChecked: "just now",
+      })));
+      const now = new Date();
+      setLastUpdated(`${now.getHours()}:${String(now.getMinutes()).padStart(2,"0")}`);
+      setRefreshing(false);
+    }, 800);
+  }
+
   return (
-    <div className="bg-card rounded-xl border shadow-card overflow-hidden">
-      <div className="px-5 py-4 border-b flex items-center justify-between">
+    <div id="health-table-section" className="bg-card rounded-xl border shadow-card overflow-hidden">
+      <div className="px-5 py-4 border-b flex items-center justify-between flex-wrap gap-3">
         <div>
           <h3 className="font-display font-semibold text-foreground">Animal Health Monitor</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Live sensor readings per animal</p>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium bg-emerald-50 px-2.5 py-1 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          Live
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Live
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={cn("w-3.5 h-3.5", refreshing && "animate-spin")} />
+            Refresh
+          </button>
+          <DownloadPDFButton sectionId="health-table-section" filename="animal-health-table" />
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -37,7 +75,7 @@ export function AnimalHealthTable() {
             </tr>
           </thead>
           <tbody>
-            {animals.map((a, i) => (
+            {animals.map((a) => (
               <tr
                 key={a.id}
                 className={cn(
@@ -92,7 +130,7 @@ export function AnimalHealthTable() {
         </table>
       </div>
       <div className="px-4 py-2.5 bg-muted/30 border-t text-xs text-muted-foreground">
-        Showing {animals.length} animals · Last updated just now
+        Showing {animals.length} animals · Last updated {lastUpdated}
       </div>
     </div>
   );
