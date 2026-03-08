@@ -4,6 +4,7 @@ import type { Alert } from "@/data/mockData";
 
 interface AlertItemProps {
   alert: Alert;
+  onClick?: () => void;
 }
 
 const iconMap = {
@@ -25,10 +26,18 @@ const iconStyles = {
   low: "text-blue-500",
 };
 
-export function AlertItem({ alert }: AlertItemProps) {
+export function AlertItem({ alert, onClick }: AlertItemProps) {
   const Icon = iconMap[alert.type];
   return (
-    <div className={cn("flex gap-3 p-3.5 rounded-lg border-l-4 transition-opacity", severityStyles[alert.severity], alert.resolved && "opacity-50")}>
+    <div
+      onClick={onClick}
+      className={cn(
+        "flex gap-3 p-3.5 rounded-lg border-l-4 transition-all",
+        severityStyles[alert.severity],
+        alert.resolved && "opacity-50",
+        onClick && "cursor-pointer hover:brightness-95"
+      )}
+    >
       <Icon className={cn("w-4 h-4 mt-0.5 shrink-0", iconStyles[alert.severity])} />
       <div className="flex-1 min-w-0">
         <p className="text-sm text-foreground leading-snug">{alert.message}</p>
@@ -40,6 +49,9 @@ export function AlertItem({ alert }: AlertItemProps) {
             <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
               <CheckCircle2 className="w-3 h-3" /> Resolved
             </span>
+          )}
+          {onClick && !alert.resolved && (
+            <span className="text-xs text-muted-foreground ml-auto opacity-60">Tap for details →</span>
           )}
         </div>
       </div>
