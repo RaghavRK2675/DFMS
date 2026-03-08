@@ -97,7 +97,7 @@ export const alerts: Alert[] = [
   { id: "AL003", type: "environment", severity: "medium", message: "Ammonia level at 29 ppm — approaching critical threshold (30 ppm). Improve ventilation.", pen: "All Pens", timestamp: "Today, 13:50", resolved: false },
   { id: "AL004", type: "behavior", severity: "medium", message: "Reduced activity & social isolation observed — P-005 (Pen C). Monitor closely.", animal: "P-005", pen: "Pen C", timestamp: "Today, 12:20", resolved: false },
   { id: "AL005", type: "nutrition", severity: "low", message: "Under-feeding pattern detected in Pen B for 2 consecutive days. Check feeder.", pen: "Pen B", timestamp: "Today, 09:00", resolved: true },
-  { id: "AL006", tag: "environment", severity: "low", message: "Hygiene score dropped to 65 in House 1. Schedule cleaning task.", pen: "House 1", timestamp: "Yesterday, 18:45", resolved: true },
+  { id: "AL006", type: "environment", severity: "low", message: "Hygiene score dropped to 65 in House 1. Schedule cleaning task.", pen: "House 1", timestamp: "Yesterday, 18:45", resolved: true },
 ];
 
 // ─── Feed Records (last 7 days) ───────────────────────────────────────────
