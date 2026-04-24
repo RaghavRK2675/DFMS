@@ -1,0 +1,25 @@
+# Render.com blueprint — deploy with: connect GitHub repo → Render auto-detects this file
+services:
+  - type: web
+    name: dfms-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false   # set in Render dashboard
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false   # set in Render dashboard
+      - key: CORS_ORIGINS
+        value: https://raghavrk2675.github.io
+      - key: ENABLE_SEED
+        value: "true"
+      - key: ENABLE_LIVE_SIMULATION
+        value: "true"
