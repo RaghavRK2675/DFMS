@@ -1,4 +1,5 @@
-import { summaryStats } from "@/data/mockData";
+import { useStats } from "@/hooks/useDfmsData";
+import { useAuth } from "@/contexts/AuthContext";
 import { StatCard } from "@/components/StatCard";
 import { AnimalHealthTable } from "@/components/AnimalHealthTable";
 import { EnvironmentPanel } from "@/components/EnvironmentPanel";
@@ -11,8 +12,10 @@ import { UnresolvedIssuesPanel } from "@/components/UnresolvedIssuesPanel";
 import { IoTStatusPanel } from "@/components/IoTStatusPanel";
 import { StatCardDetailModal } from "@/components/StatCardDetailModal";
 import { DownloadPDFButton } from "@/components/DownloadPDFButton";
+import { AccountSettingsDialog } from "@/components/AccountSettingsDialog";
+import { NotificationPrefsDialog } from "@/components/NotificationPrefsDialog";
 import {
-  PawPrint, Leaf, ShieldCheck, BellRing, Thermometer, Target,
+  PawPrint, Leaf, ShieldCheck, BellRing, Target,
   TrendingUp, AlertTriangle, CheckCircle2, ShieldAlert, User,
 } from "lucide-react";
 import { useState } from "react";
@@ -27,10 +30,15 @@ type StatModalKey = "totalAnimals" | "healthyAnimals" | "activeAlerts" | "isolat
 export default function Index() {
   const [activeModal, setActiveModal] = useState<StatModalKey>(null);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [prefsOpen, setPrefsOpen] = useState(false);
+  const { data: stats } = useStats();
+  const { user } = useAuth();
+  const total = stats?.totalAnimals ?? 0;
+  const healthyPct = total ? Math.round(((stats?.healthyAnimals ?? 0) / total) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-background" id="dfms-full-dashboard">
-      {/* Header / Navbar */}
       <header className="gradient-hero text-white px-6 py-5 shadow-elevated sticky top-0 z-40">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -47,10 +55,9 @@ export default function Index() {
               <span className="text-white/90 text-sm font-medium">{today}</span>
               <div className="flex items-center gap-1.5 text-xs text-white/70">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                System Online · 99% Uptime · {summaryStats.detectionAccuracy}% Detection Accuracy
+                System Online · {stats?.detectionAccuracy ?? 92}% Detection Accuracy {user ? `· ${user.name}` : ""}
               </div>
             </div>
-            {/* Profile icon */}
             <button
               onClick={() => setProfileOpen(true)}
               className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 border border-white/30 flex items-center justify-center transition-colors shrink-0"
@@ -62,137 +69,77 @@ export default function Index() {
         </div>
       </header>
 
-      {/* Hero Section */}
       <HeroSection />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-
-        {/* ── Summary Stats ── */}
         <section id="summary-stats-section">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-display font-semibold text-foreground text-base">Herd Overview</h2>
             <DownloadPDFButton sectionId="summary-stats-section" filename="herd-overview" />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-4">
-            <StatCard
-              title="Total Animals"
-              value={summaryStats.totalAnimals}
-              subtitle={`${summaryStats.pigsCount} pigs · ${summaryStats.poultryCount} poultry`}
-              icon={PawPrint}
-              variant="default"
-              onClick={() => setActiveModal("totalAnimals")}
-            />
-            <StatCard
-              title="Healthy Animals"
-              value={summaryStats.healthyAnimals}
-              subtitle={`${Math.round((summaryStats.healthyAnimals / summaryStats.totalAnimals) * 100)}% of herd`}
-              icon={CheckCircle2}
-              variant="success"
-              trend={{ value: "93%", up: true }}
-              onClick={() => setActiveModal("healthyAnimals")}
-            />
-            <StatCard
-              title="Active Alerts"
-              value={summaryStats.activeAlerts}
-              subtitle="Require immediate action"
-              icon={BellRing}
-              variant="warning"
-              onClick={() => setActiveModal("activeAlerts")}
-            />
-            <StatCard
-              title="Isolated Animals"
-              value={summaryStats.isolatedAnimals}
-              subtitle="Disease containment active"
-              icon={ShieldAlert}
-              variant="danger"
-              onClick={() => setActiveModal("isolatedAnimals")}
-            />
+            <StatCard title="Total Animals" value={stats?.totalAnimals ?? 0}
+              subtitle={`${stats?.pigsCount ?? 0} pigs · ${stats?.poultryCount ?? 0} poultry`}
+              icon={PawPrint} variant="default" onClick={() => setActiveModal("totalAnimals")} />
+            <StatCard title="Healthy Animals" value={stats?.healthyAnimals ?? 0}
+              subtitle={`${healthyPct}% of herd`} icon={CheckCircle2} variant="success"
+              onClick={() => setActiveModal("healthyAnimals")} />
+            <StatCard title="Active Alerts" value={stats?.activeAlerts ?? 0}
+              subtitle="Require immediate action" icon={BellRing} variant="warning"
+              onClick={() => setActiveModal("activeAlerts")} />
+            <StatCard title="Isolated Animals" value={stats?.isolatedAnimals ?? 0}
+              subtitle="Disease containment active" icon={ShieldAlert} variant="danger"
+              onClick={() => setActiveModal("isolatedAnimals")} />
           </div>
         </section>
 
-        {/* ── Performance Metrics ── */}
         <section>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <StatCard
-              title="Detection Accuracy"
-              value={`${summaryStats.detectionAccuracy}%`}
-              subtitle="Two-Way ANOVA model"
-              icon={Target}
-              variant="success"
-              trend={{ value: "92%", up: true }}
-              onClick={() => setActiveModal("detectionAccuracy")}
-            />
-            <StatCard
-              title="Hygiene Improvement"
-              value={`+${summaryStats.hygieneImprovement}%`}
-              subtitle="vs. pre-DFMS baseline"
-              icon={TrendingUp}
-              variant="success"
-              onClick={() => setActiveModal("hygieneImprovement")}
-            />
-            <StatCard
-              title="At-Risk Animals"
-              value={summaryStats.atRiskAnimals}
-              subtitle="Medium risk — monitor closely"
-              icon={AlertTriangle}
-              variant="warning"
-              onClick={() => setActiveModal("atRiskAnimals")}
-            />
-            <StatCard
-              title="Nutrition Tracked"
-              value="3 Stages"
-              subtitle="Starter · Grower · Finisher"
-              icon={Leaf}
-              variant="info"
-            />
+            <StatCard title="Detection Accuracy" value={`${stats?.detectionAccuracy ?? 92}%`}
+              subtitle="Two-Way ANOVA model" icon={Target} variant="success"
+              onClick={() => setActiveModal("detectionAccuracy")} />
+            <StatCard title="Hygiene Improvement" value={`+${stats?.hygieneImprovement ?? 40}%`}
+              subtitle="vs. pre-DFMS baseline" icon={TrendingUp} variant="success"
+              onClick={() => setActiveModal("hygieneImprovement")} />
+            <StatCard title="At-Risk Animals" value={stats?.atRiskAnimals ?? 0}
+              subtitle="Medium risk — monitor closely" icon={AlertTriangle} variant="warning"
+              onClick={() => setActiveModal("atRiskAnimals")} />
+            <StatCard title="Nutrition Tracked" value="3 Stages"
+              subtitle="Starter · Grower · Finisher" icon={Leaf} variant="info" />
           </div>
         </section>
 
-        {/* ── Main Grid: Environment + Alerts ── */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <EnvironmentPanel />
-          </div>
-          <div>
-            <AlertsPanel />
-          </div>
+          <div className="lg:col-span-2"><EnvironmentPanel /></div>
+          <div><AlertsPanel /></div>
         </section>
 
-        {/* ── Animal Health Table ── */}
-        <section>
-          <AnimalHealthTable />
-        </section>
+        <section><AnimalHealthTable /></section>
 
-        {/* ── Disease Risk + Nutrition ── */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <DiseaseRiskPanel />
           <NutritionPanel />
         </section>
 
-        {/* ── Unresolved Issues ── */}
-        <section>
-          <UnresolvedIssuesPanel />
-        </section>
+        <section><UnresolvedIssuesPanel /></section>
 
-        {/* ── IoT Hardware Status ── */}
-        <section>
-          <IoTStatusPanel />
-        </section>
+        <section><IoTStatusPanel /></section>
 
-        {/* ── Footer ── */}
         <footer className="text-center text-xs text-muted-foreground py-4 border-t flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>DFMS v1.0 · Design & Implementation of a Digital Farm Management System for Enhancing Biosecurity in Pig & Poultry Farms · LPU · Group KRGC0056</span>
+          <span>DFMS v1.0 · Digital Farm Management System · LPU · Group KRGC0056</span>
           <DownloadPDFButton sectionId="dfms-full-dashboard" filename="dfms-full-dashboard" />
         </footer>
       </main>
 
-      {/* Modals & Panels */}
-      <StatCardDetailModal
-        open={!!activeModal}
-        onClose={() => setActiveModal(null)}
-        modalKey={activeModal}
+      <StatCardDetailModal open={!!activeModal} onClose={() => setActiveModal(null)} modalKey={activeModal} />
+      <ProfilePanel
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        onOpenAccount={() => { setProfileOpen(false); setAccountOpen(true); }}
+        onOpenPrefs={() => { setProfileOpen(false); setPrefsOpen(true); }}
       />
-      <ProfilePanel open={profileOpen} onClose={() => setProfileOpen(false)} />
+      <AccountSettingsDialog open={accountOpen} onClose={() => setAccountOpen(false)} />
+      <NotificationPrefsDialog open={prefsOpen} onClose={() => setPrefsOpen(false)} />
     </div>
   );
 }
