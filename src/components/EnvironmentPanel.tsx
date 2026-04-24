@@ -1,10 +1,11 @@
-import { environmentTrend, currentEnv } from "@/data/mockData";
+import { useEnvTrend, useCurrentEnv } from "@/hooks/useDfmsData";
 import { GaugeMeter } from "@/components/GaugeMeter";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
-import { Thermometer, Droplets, Wind, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
+import { DownloadPDFButton } from "@/components/DownloadPDFButton";
 
 const envMetrics = [
   { key: "temperature", label: "Temperature", color: "#f97316", unit: "°C" },
@@ -22,44 +23,59 @@ function StatusChip({ value, label, good }: { value: string | number; label: str
 }
 
 export function EnvironmentPanel() {
+  const { data: trend = [], isLoading: trendLoading } = useEnvTrend();
+  const { data: current, isLoading: curLoading } = useCurrentEnv();
+
+  const env = current ?? { temperature: 0, humidity: 0, ammonia: 0, hygieneScore: 0, airQuality: "—" };
+
   return (
-    <div className="bg-card rounded-xl border shadow-card">
-      <div className="px-5 py-4 border-b">
-        <h3 className="font-display font-semibold text-foreground">Environmental Monitoring</h3>
-        <p className="text-xs text-muted-foreground mt-0.5">Temperature · Humidity · Ammonia · Hygiene — 12h trend</p>
+    <div id="environment-section" className="bg-card rounded-xl border shadow-card">
+      <div className="px-5 py-4 border-b flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h3 className="font-display font-semibold text-foreground">Environmental Monitoring</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Temperature · Humidity · Ammonia · Hygiene — 12h trend</p>
+        </div>
+        <DownloadPDFButton sectionId="environment-section" filename="environment-monitoring" />
       </div>
 
-      {/* Gauges */}
-      <div className="px-5 pt-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <GaugeMeter value={currentEnv.temperature} max={45} label="Temperature" unit="°C" thresholds={{ warn: 28, danger: 32 }} />
-        <GaugeMeter value={currentEnv.humidity} max={100} label="Humidity" unit="%" thresholds={{ warn: 70, danger: 85 }} />
-        <GaugeMeter value={currentEnv.ammonia} max={50} label="Ammonia" unit="ppm" thresholds={{ warn: 25, danger: 35 }} />
-        <GaugeMeter value={currentEnv.hygieneScore} max={100} label="Hygiene Score" unit="/100" thresholds={{ warn: 120, danger: 140 }} />
-      </div>
+      {curLoading ? (
+        <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+      ) : (
+        <>
+          <div className="px-5 pt-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <GaugeMeter value={env.temperature} max={45} label="Temperature" unit="°C" thresholds={{ warn: 28, danger: 32 }} />
+            <GaugeMeter value={env.humidity} max={100} label="Humidity" unit="%" thresholds={{ warn: 70, danger: 85 }} />
+            <GaugeMeter value={env.ammonia} max={50} label="Ammonia" unit="ppm" thresholds={{ warn: 25, danger: 35 }} />
+            <GaugeMeter value={env.hygieneScore} max={100} label="Hygiene Score" unit="/100" thresholds={{ warn: 120, danger: 140 }} />
+          </div>
 
-      {/* Status row */}
-      <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatusChip value={`${currentEnv.temperature}°C`} label="Ambient Temp" good={currentEnv.temperature < 30} />
-        <StatusChip value={`${currentEnv.humidity}%`} label="Humidity" good={currentEnv.humidity < 70} />
-        <StatusChip value={`${currentEnv.ammonia} ppm`} label="Ammonia" good={currentEnv.ammonia < 25} />
-        <StatusChip value={currentEnv.airQuality} label="Air Quality" good={currentEnv.airQuality === "Good"} />
-      </div>
+          <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatusChip value={`${env.temperature}°C`} label="Ambient Temp" good={env.temperature < 30} />
+            <StatusChip value={`${env.humidity}%`} label="Humidity" good={env.humidity < 70} />
+            <StatusChip value={`${env.ammonia} ppm`} label="Ammonia" good={env.ammonia < 25} />
+            <StatusChip value={env.airQuality} label="Air Quality" good={env.airQuality === "Good"} />
+          </div>
+        </>
+      )}
 
-      {/* Trend chart */}
       <div className="px-5 pb-5">
         <p className="text-xs font-medium text-muted-foreground mb-3">12-Hour Trend</p>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={environmentTrend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(120 10% 90%)" />
-            <XAxis dataKey="time" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
-            {envMetrics.map(m => (
-              <Line key={m.key} type="monotone" dataKey={m.key} stroke={m.color} strokeWidth={2} dot={false} name={`${m.label} (${m.unit})`} />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
+        {trendLoading ? (
+          <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+        ) : (
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={trend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(120 10% 90%)" />
+              <XAxis dataKey="time" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              {envMetrics.map((m) => (
+                <Line key={m.key} type="monotone" dataKey={m.key} stroke={m.color} strokeWidth={2} dot={false} name={`${m.label} (${m.unit})`} />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );
