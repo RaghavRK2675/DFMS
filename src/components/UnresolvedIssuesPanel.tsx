@@ -1,11 +1,12 @@
-import { alerts, summaryStats } from "@/data/mockData";
+import { useAlerts } from "@/hooks/useDfmsData";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle, Wind, Leaf, Info, TrendingDown,
-  IndianRupee, Clock, ChevronDown, ChevronUp,
+  IndianRupee, Clock, ChevronDown, ChevronUp, Loader2,
 } from "lucide-react";
 import { useState } from "react";
 import { DownloadPDFButton } from "@/components/DownloadPDFButton";
+import type { Alert } from "@/data/mockData";
 
 const iconMap = {
   disease: AlertTriangle,
@@ -41,16 +42,15 @@ const consequences: Record<string, { impact: string; economic: string; timeline:
   },
 };
 
-function IssueCard({ alert }: { alert: typeof alerts[0] }) {
+function IssueCard({ alert }: { alert: Alert }) {
   const [expanded, setExpanded] = useState(false);
   const Icon = iconMap[alert.type];
   const cons = consequences[alert.type];
 
   return (
     <div className={cn("rounded-xl border overflow-hidden", alert.severity === "high" ? "border-red-200" : "border-amber-200")}>
-      {/* Header */}
       <button
-        onClick={() => setExpanded(v => !v)}
+        onClick={() => setExpanded((v) => !v)}
         className={cn("w-full flex items-start gap-3 p-4 text-left hover:opacity-90 transition-opacity",
           alert.severity === "high" ? "bg-red-50" : "bg-amber-50"
         )}
@@ -71,7 +71,6 @@ function IssueCard({ alert }: { alert: typeof alerts[0] }) {
         {expanded ? <ChevronUp className="w-4 h-4 shrink-0 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" />}
       </button>
 
-      {/* Expanded details */}
       {expanded && (
         <div className="p-4 border-t bg-card space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -99,9 +98,11 @@ function IssueCard({ alert }: { alert: typeof alerts[0] }) {
 }
 
 export function UnresolvedIssuesPanel() {
-  const unresolved = alerts.filter(a => !a.resolved);
-  const highCount = unresolved.filter(a => a.severity === "high").length;
-  const medCount = unresolved.filter(a => a.severity === "medium").length;
+  const { data: alerts = [], isLoading } = useAlerts();
+  const unresolved = alerts.filter((a) => !a.resolved);
+  const highCount = unresolved.filter((a) => a.severity === "high").length;
+  const medCount = unresolved.filter((a) => a.severity === "medium").length;
+  const revenueAtRisk = highCount * 25000 + medCount * 7000;
 
   return (
     <div id="unresolved-section" className="bg-card rounded-xl border shadow-card">
@@ -115,7 +116,7 @@ export function UnresolvedIssuesPanel() {
             {unresolved.length} unresolved · {highCount} critical · {medCount} moderate
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 no-print">
           <span className="text-xs font-medium text-red-700 bg-red-100 border border-red-200 px-3 py-1 rounded-full">
             {highCount} Critical Action Required
           </span>
@@ -123,14 +124,13 @@ export function UnresolvedIssuesPanel() {
         </div>
       </div>
 
-      {/* Stats row */}
       <div className="px-5 py-4 border-b grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: "Total Unresolved", value: unresolved.length, color: "text-foreground" },
           { label: "High Severity", value: highCount, color: "text-red-700" },
           { label: "Medium Severity", value: medCount, color: "text-amber-700" },
-          { label: "Potential Revenue at Risk", value: "₹75,000+", color: "text-red-700" },
-        ].map(s => (
+          { label: "Potential Revenue at Risk", value: `₹${revenueAtRisk.toLocaleString("en-IN")}+`, color: "text-red-700" },
+        ].map((s) => (
           <div key={s.label} className="text-center rounded-lg bg-muted/50 p-3 border">
             <p className={cn("text-2xl font-display font-bold", s.color)}>{s.value}</p>
             <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
@@ -139,10 +139,12 @@ export function UnresolvedIssuesPanel() {
       </div>
 
       <div className="p-5 space-y-3">
-        {unresolved.length === 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+        ) : unresolved.length === 0 ? (
           <p className="text-center text-muted-foreground text-sm py-6">🎉 All issues resolved!</p>
         ) : (
-          unresolved.map(alert => <IssueCard key={alert.id} alert={alert} />)
+          unresolved.map((alert) => <IssueCard key={alert.id} alert={alert} />)
         )}
       </div>
     </div>

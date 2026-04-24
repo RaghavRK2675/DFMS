@@ -1,4 +1,4 @@
-import { summaryStats } from "@/data/mockData";
+import { useStats } from "@/hooks/useDfmsData";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { DiseaseRiskDetailModal } from "@/components/DiseaseRiskDetailModal";
@@ -52,6 +52,9 @@ function RiskIndexCard({ title, value, description, formula, onDetails }: RiskIn
 
 export function DiseaseRiskPanel() {
   const [modal, setModal] = useState<ModalType>(null);
+  const { data: stats } = useStats();
+  const bri = stats?.biosecurityRiskIndex ?? 0;
+  const dsi = stats?.diseaseSusceptibilityIndex ?? 0;
 
   return (
     <>
@@ -66,26 +69,25 @@ export function DiseaseRiskPanel() {
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <RiskIndexCard
             title="Biosecurity Risk Index (BRI)"
-            value={summaryStats.biosecurityRiskIndex}
+            value={bri}
             description="Composite risk from temperature deviation, humidity, ammonia levels & behavioral stress."
             formula="BRI = w₁·Td + w₂·Hd + w₃·Ad + w₄·Bs"
             onDetails={() => setModal("bri")}
           />
           <RiskIndexCard
             title="Disease Susceptibility Index (DSI)"
-            value={summaryStats.diseaseSusceptibilityIndex}
+            value={dsi}
             description="Risk based on environmental deviation, nutritional imbalance, and vision-based behavioral stress."
             formula="DSI = α·Ed + β·Nd + γ·Bs"
             onDetails={() => setModal("dsi")}
           />
         </div>
-        {/* Animal distribution */}
         <div className="px-5 pb-5 grid grid-cols-3 gap-3">
           {[
-            { label: "Healthy", count: summaryStats.healthyAnimals, color: "text-emerald-700 bg-emerald-50 border-emerald-200", key: "healthy" as ModalType },
-            { label: "At Risk", count: summaryStats.atRiskAnimals, color: "text-amber-700 bg-amber-50 border-amber-200", key: "atRisk" as ModalType },
-            { label: "Infected", count: summaryStats.infectedAnimals, color: "text-red-700 bg-red-50 border-red-200", key: "infected" as ModalType },
-          ].map(item => (
+            { label: "Healthy", count: stats?.healthyAnimals ?? 0, color: "text-emerald-700 bg-emerald-50 border-emerald-200", key: "healthy" as ModalType },
+            { label: "At Risk", count: stats?.atRiskAnimals ?? 0, color: "text-amber-700 bg-amber-50 border-amber-200", key: "atRisk" as ModalType },
+            { label: "Infected", count: stats?.infectedAnimals ?? 0, color: "text-red-700 bg-red-50 border-red-200", key: "infected" as ModalType },
+          ].map((item) => (
             <div
               key={item.label}
               onClick={() => setModal(item.key)}
@@ -98,7 +100,7 @@ export function DiseaseRiskPanel() {
           ))}
         </div>
       </div>
-      <DiseaseRiskDetailModal open={!!modal} onClose={() => setModal(null)} type={modal} />
+      <DiseaseRiskDetailModal open={!!modal} onClose={() => setModal(null)} type={modal} stats={stats} />
     </>
   );
 }
