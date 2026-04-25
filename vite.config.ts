@@ -4,7 +4,10 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
+// VITE_BASE_PATH lets us deploy under e.g. /DFMS/ on GitHub Pages
+// while keeping "/" for Lovable preview and local dev.
 export default defineConfig(({ mode }) => ({
+  base: process.env.VITE_BASE_PATH || "/",
   server: {
     host: "::",
     port: 8080,
