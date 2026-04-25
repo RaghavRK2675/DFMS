@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import {
   WifiOff, Thermometer, Droplets, Wind, Camera as CameraIcon,
-  Cpu, Radio, Battery, AlertTriangle, CheckCircle2, RefreshCw, Video, Plus,
+  Cpu, Radio, Battery, AlertTriangle, CheckCircle2, RefreshCw, Video,
 } from "lucide-react";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
