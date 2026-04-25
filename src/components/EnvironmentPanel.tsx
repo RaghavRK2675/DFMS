@@ -53,7 +53,11 @@ export function EnvironmentPanel() {
             <StatusChip value={`${env.temperature}°C`} label="Ambient Temp" good={env.temperature < 30} />
             <StatusChip value={`${env.humidity}%`} label="Humidity" good={env.humidity < 70} />
             <StatusChip value={`${env.ammonia} ppm`} label="Ammonia" good={env.ammonia < 25} />
-            <StatusChip value={env.airQuality} label="Air Quality" good={env.airQuality === "Good"} />
+            <StatusChip
+              value={env.ammonia < 20 ? "Good" : env.ammonia < 30 ? "Fair" : "Poor"}
+              label="Air Quality"
+              good={env.ammonia < 20}
+            />
           </div>
         </>
       )}
