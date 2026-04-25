@@ -1,19 +1,23 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCameras, useAddCamera, useDeleteCamera } from "@/hooks/useDfmsData";
 import { CameraPlayer } from "@/components/CameraPlayer";
-import { Camera as CameraIcon, Plus, Trash2, Video, VideoOff } from "lucide-react";
+import { Camera as CameraIcon, Plus, Trash2, VideoOff } from "lucide-react";
 import { toast } from "sonner";
 
-export function CameraFeedDialog() {
+interface Props {
+  open: boolean;
+  onClose: () => void;
+}
+
+export function CameraFeedDialog({ open, onClose }: Props) {
   const { data: cameras, isLoading } = useCameras();
   const addCam = useAddCamera();
   const delCam = useDeleteCamera();
-  const [open, setOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
@@ -32,12 +36,7 @@ export function CameraFeedDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
-          <Video className="w-3.5 h-3.5" /> Live Camera Feed
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
