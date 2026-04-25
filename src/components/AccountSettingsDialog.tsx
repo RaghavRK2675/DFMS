@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/api";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface Props { open: boolean; onClose: () => void; }
 
 export function AccountSettingsDialog({ open, onClose }: Props) {
-  const { user, setUser } = useAuth();
+  const { user, refresh } = useAuth();
   const [tab, setTab] = useState<"profile" | "password">("profile");
   if (!user) return null;
   return (
@@ -31,13 +31,13 @@ export function AccountSettingsDialog({ open, onClose }: Props) {
             </button>
           ))}
         </div>
-        {tab === "profile" ? <ProfileForm user={user} setUser={setUser} /> : <PasswordForm />}
+        {tab === "profile" ? <ProfileForm user={user} refresh={refresh} /> : <PasswordForm />}
       </DialogContent>
     </Dialog>
   );
 }
 
-function ProfileForm({ user, setUser }: any) {
+function ProfileForm({ user, refresh }: any) {
   const [name, setName] = useState(user.name);
   const [farmName, setFarmName] = useState(user.farmName);
   const [location, setLocation] = useState(user.location);
@@ -48,11 +48,15 @@ function ProfileForm({ user, setUser }: any) {
     e.preventDefault();
     setSaving(true);
     try {
-      const { data } = await api.patch("/users/me", { name, farmName, location, phone, licenseId });
-      setUser(data.user);
+      const { error } = await supabase
+        .from("profiles")
+        .update({ name, farm_name: farmName, location, phone, license_id: licenseId })
+        .eq("id", user.id);
+      if (error) throw error;
+      await refresh();
       toast.success("Profile updated");
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Update failed");
+      toast.error(err?.message ?? "Update failed");
     } finally { setSaving(false); }
   }
   return (
@@ -71,24 +75,25 @@ function ProfileForm({ user, setUser }: any) {
 }
 
 function PasswordForm() {
-  const [cur, setCur] = useState("");
   const [next, setNext] = useState("");
   const [saving, setSaving] = useState(false);
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.post("/users/me/change-password", { currentPassword: cur, newPassword: next });
+      const { error } = await supabase.auth.updateUser({ password: next });
+      if (error) throw error;
       toast.success("Password updated");
-      setCur(""); setNext("");
+      setNext("");
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Password change failed");
+      toast.error(err?.message ?? "Password change failed");
     } finally { setSaving(false); }
   }
   return (
     <form onSubmit={save} className="space-y-3 mt-4">
-      <Field label="Current password"><Input type="password" value={cur} onChange={(e) => setCur(e.target.value)} required /></Field>
-      <Field label="New password (min 8 chars)"><Input type="password" minLength={8} value={next} onChange={(e) => setNext(e.target.value)} required /></Field>
+      <Field label="New password (min 6 chars)">
+        <Input type="password" minLength={6} value={next} onChange={(e) => setNext(e.target.value)} required />
+      </Field>
       <Button type="submit" disabled={saving} className="w-full">
         {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Update password
       </Button>

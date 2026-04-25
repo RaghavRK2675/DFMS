@@ -2,28 +2,35 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/api";
+import { useAuth, UserPreferences } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface Props { open: boolean; onClose: () => void; }
 
 export function NotificationPrefsDialog({ open, onClose }: Props) {
-  const { user, setUser } = useAuth();
+  const { user, setUser, refresh } = useAuth();
   if (!user) return null;
   const prefs = user.preferences;
 
-  async function update(patch: Partial<typeof prefs>) {
+  async function update(patch: Partial<UserPreferences>) {
+    const next = { ...prefs, ...patch };
+    // Optimistic update
+    setUser({ ...user!, preferences: next });
     try {
-      const { data } = await api.patch("/users/me/preferences", patch);
-      setUser({ ...user, preferences: data.preferences });
+      const { error } = await supabase
+        .from("profiles")
+        .update({ preferences: next as any })
+        .eq("id", user!.id);
+      if (error) throw error;
       toast.success("Preferences saved");
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Save failed");
+      toast.error(err?.message ?? "Save failed");
+      await refresh();
     }
   }
 
-  const rows: { key: keyof typeof prefs; label: string; desc: string }[] = [
+  const rows: { key: keyof UserPreferences; label: string; desc: string }[] = [
     { key: "emailAlerts", label: "Email alerts", desc: "Receive critical alerts by email." },
     { key: "pushAlerts", label: "Push notifications", desc: "Browser push when an alert fires." },
     { key: "smsAlerts", label: "SMS alerts", desc: "Text message for high-severity events." },
@@ -45,7 +52,7 @@ export function NotificationPrefsDialog({ open, onClose }: Props) {
               </div>
               <Switch
                 checked={prefs[r.key] as boolean}
-                onCheckedChange={(v) => update({ [r.key]: v } as any)}
+                onCheckedChange={(v) => update({ [r.key]: v } as Partial<UserPreferences>)}
               />
             </div>
           ))}
