@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import type { Session } from "@supabase/supabase-js";
 
 export interface UserPreferences {
@@ -140,11 +141,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithGoogle = async () => {
     const redirectUrl = `${window.location.origin}${import.meta.env.BASE_URL}`;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: redirectUrl },
-    });
-    if (error) throw error;
+    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: redirectUrl });
+    if ((result as any)?.error) throw (result as any).error;
   };
 
   const logout = async () => {
