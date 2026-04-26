@@ -9,6 +9,10 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
+import AnimalsPage from "./pages/AnimalsPage";
+import AnimalDetailPage from "./pages/AnimalDetailPage";
+import AuditLogsPage from "./pages/AuditLogsPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -26,13 +30,13 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/animals" element={<ProtectedRoute><AnimalsPage /></ProtectedRoute>} />
+            <Route path="/animals/:id" element={<ProtectedRoute><AnimalDetailPage /></ProtectedRoute>} />
+            <Route path="/audit" element={<ProtectedRoute><AuditLogsPage /></ProtectedRoute>} />
             <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Index />
-                </ProtectedRoute>
-              }
+              path="/admin/users"
+              element={<ProtectedRoute requireCapability="users.manage"><AdminUsersPage /></ProtectedRoute>}
             />
             <Route path="*" element={<NotFound />} />
           </Routes>
