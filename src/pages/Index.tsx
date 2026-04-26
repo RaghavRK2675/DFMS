@@ -17,8 +17,12 @@ import { NotificationPrefsDialog } from "@/components/NotificationPrefsDialog";
 import {
   PawPrint, Leaf, ShieldCheck, BellRing, Target,
   TrendingUp, AlertTriangle, CheckCircle2, ShieldAlert, User,
+  FileHeart, ScrollText, Users as UsersIcon,
 } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { can, Role } from "@/lib/permissions";
 
 const today = new Date().toLocaleDateString("en-IN", {
   weekday: "long", year: "numeric", month: "long", day: "numeric",
@@ -68,6 +72,28 @@ export default function Index() {
           </div>
         </div>
       </header>
+
+      <nav className="bg-card border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex flex-wrap gap-2">
+          <Link to="/animals">
+            <Button variant="ghost" size="sm" className="gap-2">
+              <FileHeart className="w-4 h-4" /> Medical Records
+            </Button>
+          </Link>
+          <Link to="/audit">
+            <Button variant="ghost" size="sm" className="gap-2">
+              <ScrollText className="w-4 h-4" /> Audit Logs
+            </Button>
+          </Link>
+          {can(user?.role as Role | undefined, "users.manage") && (
+            <Link to="/admin/users">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <UsersIcon className="w-4 h-4" /> User Management
+              </Button>
+            </Link>
+          )}
+        </div>
+      </nav>
 
       <HeroSection />
 
