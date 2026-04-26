@@ -12,16 +12,17 @@ export async function logAudit(entry: AuditEntry) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from("audit_logs").insert({
+    const row = {
       actor_id: user.id,
-      actor_email: user.email ?? null,
+      actor_email: user.email ?? undefined,
       action: entry.action,
-      target_table: entry.target_table ?? null,
-      target_id: entry.target_id ?? null,
+      target_table: entry.target_table,
+      target_id: entry.target_id,
       summary: entry.summary,
-      metadata: entry.metadata ?? {},
-      user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
-    });
+      metadata: (entry.metadata ?? {}) as never,
+      user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+    };
+    await supabase.from("audit_logs").insert(row as never);
   } catch (err) {
     // Audit failures must never break user flows.
     console.warn("audit log failed", err);
