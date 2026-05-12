@@ -302,9 +302,13 @@ function useGlobalTick() {
   useEffect(() => {
     if (intervalStarted) return;
     intervalStarted = true;
+    // Pull real outdoor weather immediately, then refresh every 10 min.
+    fetchExternalAmbient().then(() => tick());
+    const weatherTimer = window.setInterval(fetchExternalAmbient, 10 * 60_000);
     ref.current = window.setInterval(tick, 30_000);
     return () => {
       if (ref.current) window.clearInterval(ref.current);
+      window.clearInterval(weatherTimer);
       intervalStarted = false;
     };
   }, []);
