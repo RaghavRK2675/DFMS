@@ -183,13 +183,43 @@ function seed() {
   store.initialized = true;
 }
 
+// ---------- live external data (Open-Meteo, no API key) ----------
+// Pulls real outdoor weather for a representative Indian farm location
+// (Phagwara, Punjab — LPU campus) and blends it into the environmental
+// trend so the dashboard reflects actual atmospheric conditions.
+const OPEN_METEO_URL =
+  "https://api.open-meteo.com/v1/forecast?latitude=31.2240&longitude=75.7739" +
+  "&current=temperature_2m,relative_humidity_2m";
+
+let lastExternal: { temperature: number; humidity: number } | null = null;
+async function fetchExternalAmbient() {
+  try {
+    const r = await fetch(OPEN_METEO_URL);
+    if (!r.ok) return null;
+    const j = await r.json();
+    const t = j?.current?.temperature_2m;
+    const h = j?.current?.relative_humidity_2m;
+    if (typeof t === "number" && typeof h === "number") {
+      lastExternal = { temperature: t, humidity: h };
+    }
+    return lastExternal;
+  } catch {
+    return null;
+  }
+}
+
 function tick() {
-  // jitter env
+  // Base on real outdoor conditions if we have them (pen interior is
+  // typically a few degrees warmer & a bit drier than outside ambient).
+  const ext = lastExternal;
   const last = store.envTrend[store.envTrend.length - 1] ?? { temperature: 26, humidity: 60, ammonia: 18, hygieneScore: 75 };
+  const baseT = ext ? clamp(ext.temperature + 3, 18, 38) : last.temperature;
+  const baseH = ext ? clamp(ext.humidity - 5, 40, 90) : last.humidity;
+
   store.envTrend.push({
     time: new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false }),
-    temperature: round1(clamp(last.temperature + (Math.random() - 0.5) * 0.6, 18, 38)),
-    humidity: Math.round(clamp(last.humidity + (Math.random() - 0.5) * 2, 40, 90)),
+    temperature: round1(clamp(baseT + (Math.random() - 0.5) * 0.6, 18, 38)),
+    humidity: Math.round(clamp(baseH + (Math.random() - 0.5) * 2, 40, 90)),
     ammonia: Math.round(clamp(last.ammonia + (Math.random() - 0.5) * 1.5, 5, 45)),
     hygieneScore: Math.round(clamp(last.hygieneScore + (Math.random() - 0.5) * 2, 50, 95)),
   });
@@ -272,9 +302,13 @@ function useGlobalTick() {
   useEffect(() => {
     if (intervalStarted) return;
     intervalStarted = true;
+    // Pull real outdoor weather immediately, then refresh every 10 min.
+    fetchExternalAmbient().then(() => tick());
+    const weatherTimer = window.setInterval(fetchExternalAmbient, 10 * 60_000);
     ref.current = window.setInterval(tick, 30_000);
     return () => {
       if (ref.current) window.clearInterval(ref.current);
+      window.clearInterval(weatherTimer);
       intervalStarted = false;
     };
   }, []);
