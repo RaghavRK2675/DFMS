@@ -32,6 +32,8 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/animals" element={<ProtectedRoute><AnimalsPage /></ProtectedRoute>} />
             <Route path="/animals/:id" element={<ProtectedRoute><AnimalDetailPage /></ProtectedRoute>} />
